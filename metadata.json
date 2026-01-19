@@ -1,0 +1,5 @@
+{
+  "name": "AI Assistant Dashboard",
+  "description": "A personal efficiency tool to create, manage, and chat with specialized AI assistants using Gemini.",
+  "requestFramePermissions": []
+}
