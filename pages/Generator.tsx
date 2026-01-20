@@ -36,6 +36,36 @@ export default function Generator() {
   // Dialog state
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
+  // Extract config from response (tries __CONFIG__ tags first, falls back to JSON matching)
+  const extractConfigFromResponse = (responseText: string): Partial<Assistant> | null => {
+    // Try __CONFIG__ tags first
+    const configMatch = responseText.match(/__CONFIG__\s*([\s\S]*?)\s*__CONFIG__/);
+    if (configMatch) {
+      try {
+        return JSON.parse(configMatch[1]);
+      } catch (e) {
+        console.log('Failed to parse config from __CONFIG__ tags');
+      }
+    }
+
+    // Fallback: try original JSON regex
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.log('Failed to parse JSON from response');
+      }
+    }
+
+    return null;
+  };
+
+  // Filter response for display (removes __CONFIG__ blocks)
+  const filterResponseForDisplay = (responseText: string): string => {
+    return responseText.replace(/__CONFIG__[\s\S]*?__CONFIG__/g, '').trim();
+  };
+
   // Auto-scroll chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,32 +103,26 @@ export default function Generator() {
 
     setIsTyping(false);
 
-    // Try to extract JSON from response
-    try {
-      // Regex to capture the first JSON object block in the text
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    // Extract config using the new helper function
+    const jsonData = extractConfigFromResponse(responseText);
 
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[0];
-        const parsed = JSON.parse(jsonStr);
-
-        // Update draft with whatever fields we got
-        setDraft((prev) => ({
-          ...prev,
-          name: parsed.name || prev.name,
-          icon: parsed.icon || prev.icon,
-          description: parsed.description || prev.description,
-          systemPrompt: parsed.systemPrompt || prev.systemPrompt,
-        }));
-      }
-    } catch (e) {
-      // JSON parsing failed, just continue chat
-      console.log('No structured JSON found in response or parse error', e);
+    // Update draft with whatever fields we got
+    if (jsonData) {
+      setDraft((prev) => ({
+        ...prev,
+        name: jsonData.name || prev.name,
+        icon: jsonData.icon || prev.icon,
+        description: jsonData.description || prev.description,
+        systemPrompt: jsonData.systemPrompt || prev.systemPrompt,
+      }));
     }
+
+    // Filter response for display (removes __CONFIG__ blocks)
+    const displayContent = filterResponseForDisplay(responseText);
 
     setMessages((prev) => [
       ...prev,
-      { role: 'model', content: responseText, timestamp: Date.now() },
+      { role: 'model', content: displayContent, timestamp: Date.now() },
     ]);
   };
 
