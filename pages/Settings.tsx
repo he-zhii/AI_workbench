@@ -18,6 +18,9 @@ export default function Settings() {
     generatorPrompt,
     updateGeneratorPrompt,
     resetGeneratorPrompt,
+    generatorWelcomeMessage,
+    updateGeneratorWelcomeMessage,
+    resetGeneratorWelcomeMessage,
   } = useApp();
 
   // Provider form state
@@ -27,6 +30,10 @@ export default function Settings() {
   // Generator prompt editor state
   const [promptEditorValue, setPromptEditorValue] = useState(generatorPrompt);
   const [showResetDialog, setShowResetDialog] = useState(false);
+
+  // Generator welcome message editor state
+  const [welcomeEditorValue, setWelcomeEditorValue] = useState(generatorWelcomeMessage);
+  const [showResetWelcomeDialog, setShowResetWelcomeDialog] = useState(false);
 
   // Dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -102,10 +109,23 @@ export default function Settings() {
     setShowResetDialog(true);
   };
 
+  const handleSaveGeneratorWelcomeMessage = () => {
+    updateGeneratorWelcomeMessage(welcomeEditorValue);
+  };
+
+  const handleResetGeneratorWelcomeMessage = () => {
+    setShowResetWelcomeDialog(true);
+  };
+
   // Sync editor value when prop changes
   useEffect(() => {
     setPromptEditorValue(generatorPrompt);
   }, [generatorPrompt]);
+
+  // Sync welcome editor value when prop changes
+  useEffect(() => {
+    setWelcomeEditorValue(generatorWelcomeMessage);
+  }, [generatorWelcomeMessage]);
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto h-full overflow-y-auto">
@@ -254,6 +274,64 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Generator Welcome Message Configuration */}
+        <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="text-green-600" size={24} />
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Generator Welcome Message</h2>
+                <p className="text-sm text-gray-500">Customize the initial message users see in the Assistant Builder</p>
+              </div>
+            </div>
+            <Button onClick={handleResetGeneratorWelcomeMessage} variant="secondary" size="sm">
+              <RefreshCw size={14} className="mr-2" />
+              Reset to Default
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Welcome Message
+              </label>
+              <textarea
+                value={welcomeEditorValue}
+                onChange={(e) => setWelcomeEditorValue(e.target.value)}
+                className="w-full p-4 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none font-sans h-24 resize-y"
+                placeholder="Enter the welcome message..."
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                This is the first message users see when they open the Generator page.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${welcomeEditorValue !== generatorWelcomeMessage ? 'bg-amber-500' : 'bg-green-500'}`}></div>
+                <span className={welcomeEditorValue !== generatorWelcomeMessage ? 'text-amber-600' : 'text-gray-500'}>
+                  {welcomeEditorValue !== generatorWelcomeMessage ? 'Unsaved changes' : 'Saved'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setWelcomeEditorValue(generatorWelcomeMessage)}
+                  variant="ghost"
+                  disabled={welcomeEditorValue === generatorWelcomeMessage}
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={handleSaveGeneratorWelcomeMessage}
+                  disabled={welcomeEditorValue === generatorWelcomeMessage}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Data Management */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -315,6 +393,20 @@ export default function Settings() {
           setShowResetDialog(false);
         }}
         onCancel={() => setShowResetDialog(false)}
+      />
+
+      {/* Reset Generator Welcome Message Dialog */}
+      <ConfirmDialog
+        isOpen={showResetWelcomeDialog}
+        type="warning"
+        title="Reset to Default Welcome Message"
+        message="Are you sure you want to reset the welcome message to the default? This will replace your custom message."
+        confirmText="Reset"
+        onConfirm={() => {
+          resetGeneratorWelcomeMessage();
+          setShowResetWelcomeDialog(false);
+        }}
+        onCancel={() => setShowResetWelcomeDialog(false)}
       />
     </div>
   );

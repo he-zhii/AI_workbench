@@ -9,14 +9,14 @@ import MessageContent from '../components/MessageContent';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Generator() {
-  const { addAssistant, getActiveProvider, generatorPrompt } = useApp();
+  const { addAssistant, getActiveProvider, generatorPrompt, generatorWelcomeMessage } = useApp();
   const navigate = useNavigate();
 
   // Chat State
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
-      content: "Hi! I'm here to help you build a new AI assistant. What kind of helper do you need today? (e.g., 'A Linux terminal expert' or 'A creative writing coach')",
+      content: generatorWelcomeMessage,
       timestamp: Date.now(),
     },
   ]);
@@ -61,9 +61,26 @@ export default function Generator() {
     return null;
   };
 
-  // Filter response for display (removes __CONFIG__ blocks)
+  // Filter response for display (removes __CONFIG__ blocks, JSON code blocks, and standalone JSON)
   const filterResponseForDisplay = (responseText: string): string => {
-    return responseText.replace(/__CONFIG__[\s\S]*?__CONFIG__/g, '').trim();
+    let filtered = responseText;
+
+    // Remove __CONFIG__ blocks
+    filtered = filtered.replace(/__CONFIG__[\s\S]*?__CONFIG__/g, '');
+
+    // Remove markdown JSON code blocks (```json ... ```)
+    filtered = filtered.replace(/```json\s*[\s\S]*?\s*```/g, '');
+
+    // Remove generic code blocks containing JSON-like objects
+    filtered = filtered.replace(/```\s*[\s\S]*?\{[\s\S]*?\}[\s\S]*?```/g, '');
+
+    // Remove standalone JSON objects (heuristic: { ... } with "name", "icon", etc.)
+    filtered = filtered.replace(/\{[\s\S]*?"name"[\s\S]*?"icon"[\s\S]*?"description"[\s\S]*?"systemPrompt"[\s\S]*?\}/g, '');
+
+    // Clean up extra whitespace and empty lines
+    filtered = filtered.replace(/\n{3,}/g, '\n\n').trim();
+
+    return filtered;
   };
 
   // Auto-scroll chat
@@ -153,7 +170,7 @@ export default function Generator() {
       <div className="flex-1 flex flex-col border-r border-gray-200 bg-white">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
           <h2 className="font-semibold text-lg text-gray-800">Builder Chat</h2>
-          <Button variant="ghost" size="sm" onClick={() => setMessages([messages[0]])}>
+          <Button variant="ghost" size="sm" onClick={() => setMessages([{ role: 'model', content: generatorWelcomeMessage, timestamp: Date.now() }])}>
             <RefreshCw size={16} className="mr-1" /> Reset
           </Button>
         </div>

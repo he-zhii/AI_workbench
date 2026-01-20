@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Assistant, AppRoute, ApiConfig, LLMProvider, ExtendedApiConfig } from './types';
-import { DEFAULT_ASSISTANTS, GENERATOR_SYSTEM_PROMPT } from './constants';
+import { DEFAULT_ASSISTANTS, GENERATOR_SYSTEM_PROMPT, GENERATOR_WELCOME_MESSAGE } from './constants';
 import Dashboard from './pages/Dashboard';
 import Generator from './pages/Generator';
 import Chat from './pages/Chat';
@@ -28,6 +28,10 @@ interface AppContextType {
   generatorPrompt: string;
   updateGeneratorPrompt: (prompt: string) => void;
   resetGeneratorPrompt: () => void;
+  // Generator welcome message configuration
+  generatorWelcomeMessage: string;
+  updateGeneratorWelcomeMessage: (message: string) => void;
+  resetGeneratorWelcomeMessage: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -235,6 +239,25 @@ export default function App() {
     setGeneratorPrompt(GENERATOR_SYSTEM_PROMPT);
   };
 
+  // Generator welcome message management
+  const [generatorWelcomeMessage, setGeneratorWelcomeMessage] = useState<string>(() => {
+    const saved = localStorage.getItem('generatorWelcomeMessage');
+    return saved || GENERATOR_WELCOME_MESSAGE;
+  });
+
+  // Persist generator welcome message
+  useEffect(() => {
+    localStorage.setItem('generatorWelcomeMessage', generatorWelcomeMessage);
+  }, [generatorWelcomeMessage]);
+
+  const updateGeneratorWelcomeMessage = (message: string) => {
+    setGeneratorWelcomeMessage(message);
+  };
+
+  const resetGeneratorWelcomeMessage = () => {
+    setGeneratorWelcomeMessage(GENERATOR_WELCOME_MESSAGE);
+  };
+
   return (
     <AppContext.Provider value={{
       assistants,
@@ -251,7 +274,10 @@ export default function App() {
       getActiveProvider,
       generatorPrompt,
       updateGeneratorPrompt,
-      resetGeneratorPrompt
+      resetGeneratorPrompt,
+      generatorWelcomeMessage,
+      updateGeneratorWelcomeMessage,
+      resetGeneratorWelcomeMessage
     }}>
       <HashRouter>
         <AppContent />

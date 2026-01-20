@@ -32,6 +32,8 @@ After outputting the configuration, add a brief note: "✓ Configuration updated
 - Only output the configuration once you have sufficient information
 - You can update the configuration multiple times as the conversation evolves`;
 
+export const GENERATOR_WELCOME_MESSAGE = "Hi! I'm here to help you build a new AI assistant. What kind of helper do you need today? (e.g., 'A Linux terminal expert' or 'A creative writing coach')";
+
 export const DEFAULT_ASSISTANTS: Assistant[] = [
   {
     id: 'default-1',
