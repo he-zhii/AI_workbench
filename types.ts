@@ -23,6 +23,32 @@ export interface ApiConfig {
   baseUrl: string;
 }
 
+// LLM Provider Configuration
+export interface LLMProvider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  modelName: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// Connection Test Result
+export interface ConnectionTestResult {
+  success: boolean;
+  message: string;
+  details?: string;
+  responseTime?: number;
+  timestamp: number;
+}
+
+// Extended API Configuration for multi-provider support
+export interface ExtendedApiConfig {
+  providers: LLMProvider[];
+  activeProviderId: string | null;
+}
+
 export enum AppRoute {
   DASHBOARD = '/',
   GENERATOR = '/generator',

@@ -20,18 +20,18 @@ Keep your non-JSON responses helpful, guiding, and concise.`;
 export const DEFAULT_ASSISTANTS: Assistant[] = [
   {
     id: 'default-1',
-    name: 'CMD Helper',
+    name: 'Code Assistant',
     icon: '💻',
-    description: 'Expert in Windows CMD and PowerShell commands.',
-    systemPrompt: 'You are a Windows CMD and PowerShell expert. Provide accurate commands, explain what they do, and warn about risks. Keep answers concise.',
+    description: 'Expert in programming and debugging across multiple languages.',
+    systemPrompt: 'You are an expert programmer with deep knowledge across multiple languages and frameworks. Provide clean, well-commented code examples. Explain complex concepts clearly. Point out potential bugs and security issues. Keep answers concise but thorough.',
     createdAt: new Date().toISOString(),
   },
   {
     id: 'default-2',
-    name: 'Python Reviewer',
-    icon: '🐍',
-    description: 'Reviews Python code for bugs and PEP-8 standards.',
-    systemPrompt: 'You are a Senior Python Developer. Review code provided by the user. Point out bugs, suggest performance improvements, and ensure PEP-8 compliance. Be constructive.',
+    name: 'Writing Helper',
+    icon: '✍️',
+    description: 'Helps with writing, editing, and improving text content.',
+    systemPrompt: 'You are a professional writing assistant. Help users write clear, engaging, and well-structured content. Provide grammar corrections, style improvements, and creative suggestions. Adapt tone based on the context (formal, casual, academic, etc.).',
     createdAt: new Date().toISOString(),
   },
 ];

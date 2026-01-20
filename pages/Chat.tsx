@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, Info, Trash2, X } from 'lucide-react';
+import { Send, ArrowLeft, Info, Trash2, X, AlertCircle } from 'lucide-react';
 import { useApp } from '../App';
-import { sendMessageToGemini } from '../services/geminiService';
+import { sendOpenAICompatibleMessage } from '../services/openaiCompatibleService';
 import { Message, AppRoute } from '../types';
 import MessageContent from '../components/MessageContent';
 
 export default function Chat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { assistants, apiConfig } = useApp();
+  const { assistants, getActiveProvider } = useApp();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const assistant = assistants.find((a) => a.id === id);
@@ -18,6 +18,7 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [providerError, setProviderError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!assistant) {
@@ -32,6 +33,14 @@ export default function Chat() {
   const handleSend = async () => {
     if (!input.trim() || isTyping || !assistant) return;
 
+    // Check for active provider
+    const activeProvider = getActiveProvider();
+    if (!activeProvider) {
+      setProviderError('No AI provider configured. Please add a provider in Settings.');
+      setTimeout(() => setProviderError(null), 5000);
+      return;
+    }
+
     const userMsg: Message = {
       role: 'user',
       content: input,
@@ -41,11 +50,12 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
+    setProviderError(null);
 
-    const response = await sendMessageToGemini(
+    const response = await sendOpenAICompatibleMessage(
       [...messages, userMsg],
       assistant.systemPrompt,
-      apiConfig
+      activeProvider
     );
 
     setMessages((prev) => [
@@ -79,6 +89,21 @@ export default function Chat() {
             </p>
           </div>
         </div>
+        {/* Provider Error Alert */}
+        {providerError && (
+          <div className="flex-1 flex justify-center px-4">
+            <div className="flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg text-sm border border-red-200">
+              <AlertCircle size={16} />
+              <span>{providerError}</span>
+              <button
+                onClick={() => setProviderError(null)}
+                className="ml-2 text-red-400 hover:text-red-600"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMessages([])}

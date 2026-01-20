@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
         // Fix for some packages that might rely on node util
         'util': 'util/'
       }
+    },
+    server: {
+      host: '0.0.0.0',
+      port: 8088
     }
   };
 });
