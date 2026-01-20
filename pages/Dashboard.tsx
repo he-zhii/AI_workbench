@@ -1,16 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, MessageSquare, MoreVertical, Edit } from 'lucide-react';
 import { useApp } from '../App';
 import { AppRoute } from '../types';
 import Button from '../components/Button';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Dashboard() {
   const { assistants, deleteAssistant } = useApp();
   const navigate = useNavigate();
 
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    assistantId: string | null;
+    assistantName: string;
+  }>({
+    isOpen: false,
+    assistantId: null,
+    assistantName: '',
+  });
+
   const handleCardClick = (id: string) => {
     navigate(`${AppRoute.CHAT}/${id}`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    setConfirmDialog({
+      isOpen: true,
+      assistantId: id,
+      assistantName: name,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDialog.assistantId) {
+      deleteAssistant(confirmDialog.assistantId);
+    }
+    setConfirmDialog({ isOpen: false, assistantId: null, assistantName: '' });
   };
 
   return (
@@ -53,10 +80,7 @@ export default function Dashboard() {
                     <span className="text-4xl">{assistant.icon}</span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Delete ${assistant.name}?`)) deleteAssistant(assistant.id);
-                        }}
+                        onClick={(e) => handleDeleteClick(e, assistant.id, assistant.name)}
                         className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg"
                       >
                         <Trash2 size={18} />
@@ -79,6 +103,17 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        type="danger"
+        title="Delete Assistant"
+        message={`Are you sure you want to delete "${confirmDialog.assistantName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDialog({ isOpen: false, assistantId: null, assistantName: '' })}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Assistant, AppRoute, ApiConfig, LLMProvider, ExtendedApiConfig } from './types';
-import { DEFAULT_ASSISTANTS } from './constants';
+import { DEFAULT_ASSISTANTS, GENERATOR_SYSTEM_PROMPT } from './constants';
 import Dashboard from './pages/Dashboard';
 import Generator from './pages/Generator';
 import Chat from './pages/Chat';
@@ -24,6 +24,10 @@ interface AppContextType {
   deleteProvider: (id: string) => void;
   setActiveProvider: (id: string) => void;
   getActiveProvider: () => LLMProvider | null;
+  // Generator prompt configuration
+  generatorPrompt: string;
+  updateGeneratorPrompt: (prompt: string) => void;
+  resetGeneratorPrompt: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -212,6 +216,25 @@ export default function App() {
     return llmConfig.providers.find((p) => p.id === llmConfig.activeProviderId) || null;
   };
 
+  // Generator prompt management
+  const [generatorPrompt, setGeneratorPrompt] = useState<string>(() => {
+    const saved = localStorage.getItem('generatorPrompt');
+    return saved || GENERATOR_SYSTEM_PROMPT;
+  });
+
+  // Persist generator prompt
+  useEffect(() => {
+    localStorage.setItem('generatorPrompt', generatorPrompt);
+  }, [generatorPrompt]);
+
+  const updateGeneratorPrompt = (prompt: string) => {
+    setGeneratorPrompt(prompt);
+  };
+
+  const resetGeneratorPrompt = () => {
+    setGeneratorPrompt(GENERATOR_SYSTEM_PROMPT);
+  };
+
   return (
     <AppContext.Provider value={{
       assistants,
@@ -225,7 +248,10 @@ export default function App() {
       updateProvider,
       deleteProvider,
       setActiveProvider,
-      getActiveProvider
+      getActiveProvider,
+      generatorPrompt,
+      updateGeneratorPrompt,
+      resetGeneratorPrompt
     }}>
       <HashRouter>
         <AppContent />

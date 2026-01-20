@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../App';
-import { Trash2, AlertTriangle, ShieldCheck, Plus, Server } from 'lucide-react';
+import { Trash2, AlertTriangle, ShieldCheck, Plus, Server, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import ProviderCard from '../components/ProviderCard';
 import ProviderForm from '../components/ProviderForm';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { LLMProvider } from '../types';
 
 export default function Settings() {
@@ -14,19 +15,45 @@ export default function Settings() {
     updateProvider,
     deleteProvider,
     setActiveProvider,
+    generatorPrompt,
+    updateGeneratorPrompt,
+    resetGeneratorPrompt,
   } = useApp();
 
   // Provider form state
   const [showProviderForm, setShowProviderForm] = useState(false);
   const [providerToEdit, setProviderToEdit] = useState<LLMProvider | null>(null);
 
+  // Generator prompt editor state
+  const [promptEditorValue, setPromptEditorValue] = useState(generatorPrompt);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+
+  // Dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    type: 'danger' | 'warning' | 'info' | 'success';
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: 'warning',
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const handleClearData = () => {
-    if (confirm('Are you sure? This will delete all custom assistants.')) {
-      localStorage.removeItem('assistants');
-      // We do NOT clear apiConfig here to prevent locking the user out,
-      // unless they explicitly want to via browser storage clearing.
-      window.location.reload();
-    }
+    setConfirmDialog({
+      isOpen: true,
+      type: 'danger',
+      title: 'Reset Application Data',
+      message: `Are you sure? This will delete all custom assistants. You have ${assistants.length} assistant(s) stored.`,
+      onConfirm: () => {
+        localStorage.removeItem('assistants');
+        window.location.reload();
+      },
+    });
   };
 
   const handleAddProvider = () => {
@@ -53,15 +80,32 @@ export default function Settings() {
     const provider = llmConfig.providers.find((p) => p.id === id);
     if (!provider) return;
 
-    const message =
-      provider.id === llmConfig.activeProviderId
-        ? `Are you sure you want to delete "${provider.name}"? It is currently set as active. You will need to select another provider or add a new one.`
-        : `Are you sure you want to delete "${provider.name}"?`;
+    const isActive = provider.id === llmConfig.activeProviderId;
+    const message = isActive
+      ? `"${provider.name}" is currently set as active. Deleting it will require selecting another provider. Are you sure?`
+      : `Are you sure you want to delete "${provider.name}"?`;
 
-    if (confirm(message)) {
-      deleteProvider(id);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      type: 'danger',
+      title: 'Delete Provider',
+      message,
+      onConfirm: () => deleteProvider(id),
+    });
   };
+
+  const handleSaveGeneratorPrompt = () => {
+    updateGeneratorPrompt(promptEditorValue);
+  };
+
+  const handleResetGeneratorPrompt = () => {
+    setShowResetDialog(true);
+  };
+
+  // Sync editor value when prop changes
+  useEffect(() => {
+    setPromptEditorValue(generatorPrompt);
+  }, [generatorPrompt]);
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto h-full overflow-y-auto">
@@ -152,6 +196,64 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Generator Prompt Configuration */}
+        <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="text-purple-600" size={24} />
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Generator Prompt Template</h2>
+                <p className="text-sm text-gray-500">Customize the system prompt used for the Assistant Builder</p>
+              </div>
+            </div>
+            <Button onClick={handleResetGeneratorPrompt} variant="secondary" size="sm">
+              <RefreshCw size={14} className="mr-2" />
+              Reset to Default
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                System Prompt Template
+              </label>
+              <textarea
+                value={promptEditorValue}
+                onChange={(e) => setPromptEditorValue(e.target.value)}
+                className="w-full p-4 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono h-48 resize-y"
+                placeholder="Enter the generator system prompt template..."
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                This template is used when building new AI assistants in the Generator. It guides the AI in creating appropriate system prompts.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${promptEditorValue !== generatorPrompt ? 'bg-amber-500' : 'bg-green-500'}`}></div>
+                <span className={promptEditorValue !== generatorPrompt ? 'text-amber-600' : 'text-gray-500'}>
+                  {promptEditorValue !== generatorPrompt ? 'Unsaved changes' : 'Saved'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setPromptEditorValue(generatorPrompt)}
+                  variant="ghost"
+                  disabled={promptEditorValue === generatorPrompt}
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={handleSaveGeneratorPrompt}
+                  disabled={promptEditorValue === generatorPrompt}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Data Management */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -186,6 +288,34 @@ export default function Settings() {
           existingProviders={llmConfig.providers}
         />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        type={confirmDialog.type}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.type === 'danger' ? 'Delete' : 'Confirm'}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
+
+      {/* Reset Generator Prompt Dialog */}
+      <ConfirmDialog
+        isOpen={showResetDialog}
+        type="warning"
+        title="Reset to Default Template"
+        message="Are you sure you want to reset the generator prompt to the default template? This will replace your custom template."
+        confirmText="Reset"
+        onConfirm={() => {
+          resetGeneratorPrompt();
+          setShowResetDialog(false);
+        }}
+        onCancel={() => setShowResetDialog(false)}
+      />
     </div>
   );
 }

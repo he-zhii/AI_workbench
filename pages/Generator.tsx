@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Check, RefreshCw, ChevronRight, Save } from 'lucide-react';
-import { sendMessageToGemini } from '../services/geminiService';
+import { Send, Check, RefreshCw, ChevronRight, Save, AlertCircle } from 'lucide-react';
+import { sendOpenAICompatibleMessage } from '../services/openaiCompatibleService';
 import { useApp } from '../App';
 import { Message, Assistant, AppRoute } from '../types';
-import { GENERATOR_SYSTEM_PROMPT } from '../constants';
 import Button from '../components/Button';
 import MessageContent from '../components/MessageContent';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Generator() {
-  const { addAssistant, apiConfig } = useApp();
+  const { addAssistant, getActiveProvider, generatorPrompt } = useApp();
   const navigate = useNavigate();
 
   // Chat State
@@ -22,6 +22,7 @@ export default function Generator() {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [providerError, setProviderError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Draft State
@@ -32,6 +33,9 @@ export default function Generator() {
     systemPrompt: '',
   });
 
+  // Dialog state
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
   // Auto-scroll chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,6 +44,14 @@ export default function Generator() {
   // Handle User Send
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
+
+    // Check for active provider
+    const activeProvider = getActiveProvider();
+    if (!activeProvider) {
+      setProviderError('No AI provider configured. Please add a provider in Settings.');
+      setTimeout(() => setProviderError(null), 5000);
+      return;
+    }
 
     const userMsg: Message = {
       role: 'user',
@@ -50,14 +62,13 @@ export default function Generator() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
+    setProviderError(null);
 
-    // Call Gemini
-    // We pass the full message history. The service layer handles normalization 
-    // and ensuring the request starts with a 'user' role.
-    const responseText = await sendMessageToGemini(
+    // Call OpenAI-compatible service
+    const responseText = await sendOpenAICompatibleMessage(
       [...messages, userMsg],
-      GENERATOR_SYSTEM_PROMPT,
-      apiConfig
+      generatorPrompt,
+      activeProvider
     );
 
     setIsTyping(false);
@@ -66,11 +77,11 @@ export default function Generator() {
     try {
       // Regex to capture the first JSON object block in the text
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
+
       if (jsonMatch) {
         const jsonStr = jsonMatch[0];
         const parsed = JSON.parse(jsonStr);
-        
+
         // Update draft with whatever fields we got
         setDraft((prev) => ({
           ...prev,
@@ -93,15 +104,19 @@ export default function Generator() {
 
   const handleSave = () => {
     if (!draft.name || !draft.systemPrompt) {
-      alert("Please ensure at least a Name and System Prompt are generated or entered.");
+      setShowSaveDialog(true);
       return;
     }
+    createAssistant();
+  };
+
+  const createAssistant = () => {
     const newAssistant: Assistant = {
       id: crypto.randomUUID(),
-      name: draft.name,
+      name: draft.name || 'New Assistant',
       icon: draft.icon || '🤖',
       description: draft.description || 'Generated Assistant',
-      systemPrompt: draft.systemPrompt,
+      systemPrompt: draft.systemPrompt || 'You are a helpful assistant.',
       createdAt: new Date().toISOString(),
     };
     addAssistant(newAssistant);
@@ -118,6 +133,20 @@ export default function Generator() {
             <RefreshCw size={16} className="mr-1" /> Reset
           </Button>
         </div>
+
+        {/* Provider Error Alert */}
+        {providerError && (
+          <div className="mx-4 mt-4 flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm border border-red-200">
+            <AlertCircle size={16} />
+            <span className="flex-1">{providerError}</span>
+            <button
+              onClick={() => setProviderError(null)}
+              className="text-red-400 hover:text-red-600"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
           {messages.map((msg, idx) => (
@@ -230,6 +259,18 @@ export default function Generator() {
           </Button>
         </div>
       </div>
+
+      {/* Validation Dialog */}
+      <ConfirmDialog
+        isOpen={showSaveDialog}
+        type="warning"
+        title="Incomplete Assistant"
+        message="Please ensure at least a Name and System Prompt are generated or entered before saving."
+        confirmText="Got it"
+        cancelText=""
+        onConfirm={() => setShowSaveDialog(false)}
+        onCancel={() => setShowSaveDialog(false)}
+      />
     </div>
   );
 }
