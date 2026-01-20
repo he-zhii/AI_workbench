@@ -72,11 +72,11 @@ export default function Dashboard() {
             {assistants.map((assistant) => (
               <div
                 key={assistant.id}
-                className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300 transition-all duration-200 cursor-pointer flex flex-col h-60"
+                className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300 transition-all duration-200 cursor-pointer flex flex-col h-64"
                 onClick={() => handleCardClick(assistant.id)}
               >
-                <div className="p-6 flex-1">
-                  <div className="flex justify-between items-start mb-4">
+                <div className="p-6 flex-1 flex flex-col min-h-0">
+                  <div className="flex justify-between items-start mb-3 shrink-0">
                     <span className="text-4xl">{assistant.icon}</span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
@@ -87,14 +87,14 @@ export default function Dashboard() {
                       </button>
                     </div>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 truncate">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 truncate shrink-0">
                     {assistant.name}
                   </h3>
-                  <p className="text-sm text-gray-500 line-clamp-3">
+                  <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed overflow-hidden flex-1">
                     {assistant.description || 'No description provided.'}
                   </p>
                 </div>
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex items-center text-sm font-medium text-blue-600 group-hover:bg-blue-50 transition-colors">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex items-center justify-center text-sm font-medium text-blue-600 group-hover:bg-blue-50 transition-colors shrink-0">
                   <MessageSquare size={16} className="mr-2" />
                   Chat now
                 </div>
